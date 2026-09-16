@@ -4,7 +4,7 @@ from .database import engine, Base
 from .routers import vehicles, maintenances, fuels, expenses, dashboard, export, documents, tires, reminders
 
 # Créer les tables dans la base de données (si elles n'existent pas encore)
-Base.metadata.create_all(bind=engine)
+#Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="FleetManager Pro API",
