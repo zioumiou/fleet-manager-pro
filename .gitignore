@@ -1,0 +1,33 @@
+# Variables d'environnement (contient les mots de passe !)
+.env
+.env.local
+
+# Base de données SQLite locale
+*.db
+data/*.db
+
+# Environnement virtuel Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node modules
+node_modules/
+frontend/node_modules/
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# Logs
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# Backups (optionnel - à garder en local)
+backend/backups/
