@@ -3,39 +3,33 @@ from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routers import vehicles, maintenances, fuels, expenses, dashboard, export, documents, tires, reminders
 
-# Créer les tables dans la base de données (si elles n'existent pas encore)
-#Base.metadata.create_all(bind=engine)
+app = FastAPI(title="FleetManager Pro API")
 
-app = FastAPI(
-    title="FleetManager Pro API",
-    description="API de gestion de flotte de véhicules",
-    version="1.0.0"
-)
-
-# Configuration CORS pour autoriser le frontend React (Vite) à communiquer avec le backend
+# Configuration CORS pour accepter Vercel et localhost
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En production, remplacez "*" par l'URL exacte de votre frontend
+    allow_origins=["*"], # Autorise tout en production pour simplifier
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Inclusion de tous les routeurs
-app.include_router(vehicles.router)
-app.include_router(maintenances.router)
-app.include_router(fuels.router)
-app.include_router(expenses.router)
-app.include_router(dashboard.router)
-app.include_router(export.router)
-app.include_router(documents.router)
-app.include_router(tires.router)
-app.include_router(reminders.router)
+# Enregistrement des routeurs avec le préfixe /api
+app.include_router(vehicles.router, prefix="/api")
+app.include_router(maintenances.router, prefix="/api")
+app.include_router(fuels.router, prefix="/api")
+app.include_router(expenses.router, prefix="/api")
+app.include_router(tires.router, prefix="/api")
+app.include_router(reminders.router, prefix="/api")
+app.include_router(dashboard.router, prefix="/api")
+app.include_router(documents.router, prefix="/api")
+app.include_router(export.router, prefix="/api")
 
+# Route de test pour vérifier que le serveur répond
 @app.get("/")
 def read_root():
-    return {"message": "Bienvenue sur l'API FleetManager Pro"}
+    return {"message": "FleetManager API is running!", "status": "healthy"}
 
-@app.get("/health")
+@app.get("/api/health")
 def health_check():
-    return {"status": "healthy"}
+    return {"status": "healthy", "database": "connected"}
