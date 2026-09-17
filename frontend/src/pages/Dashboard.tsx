@@ -85,7 +85,7 @@ export default function Dashboard() {
             onChange={(e) => setSelectedVehicleId(e.target.value ? parseInt(e.target.value) : null)}
             className="border-none focus:ring-0 text-gray-700 font-medium bg-transparent cursor-pointer outline-none"
           >
-            <option value="">🌍 Tous les véhicules (Global)</option>
+            <option value=""> Tous les véhicules (Global)</option>
             {vehicles.map(v => (
               <option key={v.id} value={v.id}>🚗 {v.license_plate} - {v.brand} {v.model}</option>
             ))}
