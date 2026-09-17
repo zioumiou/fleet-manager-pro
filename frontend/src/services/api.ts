@@ -1,10 +1,8 @@
 import axios from 'axios';
 import { Vehicle, Maintenance, Fuel, Expense, KPIs, Alert, Document, Tire, Reminder, VehicleTCO } from '../types';
 
-// Construction intelligente de l'URL de base
 const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_BASE = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
-
 const api = axios.create({ baseURL: API_BASE });
 
 // ==================== VÉHICULES ====================
@@ -56,10 +54,7 @@ export const updateReminder = (id: number, data: any) => api.put<Reminder>(`/rem
 export const deleteReminder = (id: number) => api.delete(`/reminders/${id}`);
 
 // ==================== DASHBOARD ====================
-// ✅ Version unique et propre qui accepte l'ID du véhicule en option
-export const getKPIs = (vehicleId?: number) => 
-  api.get<KPIs>('/dashboard/kpis', { params: { vehicle_id: vehicleId } });
-  
+export const getKPIs = (vehicleId?: number) => api.get<KPIs>('/dashboard/kpis', { params: { vehicle_id: vehicleId } });
 export const getAlerts = () => api.get<Alert[]>('/dashboard/alerts');
 
 // ==================== EXPORTS ====================

@@ -8,7 +8,6 @@ export default function Maintenances() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  
   const [formData, setFormData] = useState({
     vehicle_id: 0,
     maintenance_date: new Date().toISOString().split('T')[0],
@@ -42,7 +41,6 @@ export default function Maintenances() {
         mileage: parseInt(String(formData.mileage)),
         cost: parseFloat(String(formData.cost))
       };
-      
       if (editingId) {
         await updateMaintenance(editingId, payload);
       } else {
@@ -77,8 +75,8 @@ export default function Maintenances() {
     <div className="p-2">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold text-gray-800">Entretiens</h1>
-        <button 
-          onClick={() => { setShowForm(true); setEditingId(null); setFormData({ vehicle_id: 0, maintenance_date: new Date().toISOString().split('T')[0], mileage: 0, maintenance_type: 'Vidange', description: '', cost: 0, garage: '' }); }} 
+        <button
+          onClick={() => { setShowForm(true); setEditingId(null); setFormData({ vehicle_id: 0, maintenance_date: new Date().toISOString().split('T')[0], mileage: 0, maintenance_type: 'Vidange', description: '', cost: 0, garage: '' }); }}
           className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition"
         >
           <Plus size={20} /> Ajouter

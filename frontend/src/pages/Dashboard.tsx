@@ -11,6 +11,20 @@ export default function Dashboard() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // ✅ Indicateur de connexion (correctement placé DANS le composant)
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
 
   useEffect(() => {
     getVehicles()
@@ -27,7 +41,7 @@ export default function Dashboard() {
       setError(null);
       setLoading(true);
       const [kpisRes, alertsRes] = await Promise.all([
-        getKPIs(selectedVehicleId || undefined), 
+        getKPIs(selectedVehicleId || undefined),
         getAlerts()
       ]);
       setKpis(kpisRes.data);
@@ -43,7 +57,6 @@ export default function Dashboard() {
   if (error) return <div className="flex items-center justify-center h-64 text-red-500">{error}</div>;
   if (!kpis) return <div className="flex items-center justify-center h-64 text-gray-500">Aucune donnée</div>;
 
-  // Données pour le graphique camembert
   const costData = [
     { name: 'Carburant', value: kpis.total_fuel_cost, color: '#3B82F6' },
     { name: 'Entretien', value: kpis.total_maintenance_cost, color: '#10B981' },
@@ -56,14 +69,19 @@ export default function Dashboard() {
 
   return (
     <div className="p-2">
-      {/* En-tête avec Sélecteur */}
+      {/* ✅ Alerte hors ligne visible uniquement si déconnecté */}
+      {!isOnline && (
+        <div className="bg-yellow-500 text-white p-3 rounded mb-4 text-center font-semibold shadow-md">
+          ⚠️ Mode hors ligne actif - Vous consultez les données en cache
+        </div>
+      )}
+
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-gray-800">Tableau de Bord</h1>
-        
         <div className="flex items-center gap-2 bg-white p-3 rounded-lg shadow-sm border border-gray-200">
           <Filter size={20} className="text-gray-500" />
-          <select 
-            value={selectedVehicleId || ''} 
+          <select
+            value={selectedVehicleId || ''}
             onChange={(e) => setSelectedVehicleId(e.target.value ? parseInt(e.target.value) : null)}
             className="border-none focus:ring-0 text-gray-700 font-medium bg-transparent cursor-pointer outline-none"
           >
@@ -75,19 +93,15 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Titre contextuel */}
       <div className="mb-6">
         <h2 className="text-lg font-semibold text-gray-600">
-          {selectedVehicleId 
-            ? `Analyse pour : ${vehicles.find(v => v.id === selectedVehicleId)?.license_plate || 'Véhicule'}` 
+          {selectedVehicleId
+            ? `Analyse pour : ${vehicles.find(v => v.id === selectedVehicleId)?.license_plate || 'Véhicule'}`
             : 'Vue Globale de la Flotte'}
         </h2>
       </div>
 
-      {/* Indicateurs Principaux */}
-      <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
-        Indicateurs Principaux
-      </h3>
+      <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">Indicateurs Principaux</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm border border-blue-100">
           <div className="flex items-center gap-3 mb-2"><Car className="text-blue-500" size={24} /><span className="text-sm text-gray-600">Véhicules</span></div>
@@ -111,10 +125,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Analyse Avancée */}
-      <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">
-        Analyse Avancée
-      </h3>
+      <h3 className="text-xl font-semibold text-gray-700 mb-4 flex items-center gap-2">Analyse Avancée</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-gradient-to-br from-blue-50 to-blue-100 p-6 rounded-lg shadow-sm border border-blue-200">
           <div className="flex items-center gap-3 mb-2"><Filter className="text-blue-600" size={24} /><span className="text-sm text-blue-700 font-medium">Distance entre pleins</span></div>
@@ -158,9 +169,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Graphiques et Résumé Financier */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        {/* Graphique Camembert */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-xl font-semibold text-gray-800 mb-4 flex items-center gap-2">
             <PieChartIcon className="text-blue-500" size={24} />
@@ -171,54 +180,41 @@ export default function Dashboard() {
           ) : (
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
-                <Pie 
-				  data={costData} 
-				  cx="50%" 
-				  cy="50%" 
-				  innerRadius={60} 
-				  outerRadius={100} 
-				  paddingAngle={5} 
-				  dataKey="value"
-				  label={({ name, percent }: any) => `${name} ${(percent ? percent * 100 : 0).toFixed(0)}%`}
-				>
-				  {costData.map((entry, index) => (
-					<Cell key={`cell-${index}`} fill={entry.color} />
-				  ))}
-				</Pie>
-				<Tooltip formatter={(value: any) => (value !== undefined ? `${fmt(value)} DA` : '0 DA')} />
-				<Legend />
+                <Pie
+                  data={costData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={100}
+                  paddingAngle={5}
+                  dataKey="value"
+                  label={({ name, percent }: any) => `${name} ${(percent ? percent * 100 : 0).toFixed(0)}%`}
+                >
+                  {costData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value: any) => (value !== undefined ? `${fmt(value)} DA` : '0 DA')} />
+                <Legend />
               </PieChart>
             </ResponsiveContainer>
           )}
         </div>
 
-        {/* Résumé Financier */}
         <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
           <h3 className="text-xl font-semibold text-gray-800 mb-4">Résumé Financier</h3>
           <div className="space-y-4">
             <div className="flex justify-between items-center border-l-4 border-blue-500 pl-4">
-              <div>
-                <p className="text-sm text-gray-600">Carburant</p>
-                <p className="text-2xl font-bold">{fmt(kpis.total_fuel_cost)} DA</p>
-              </div>
+              <div><p className="text-sm text-gray-600">Carburant</p><p className="text-2xl font-bold">{fmt(kpis.total_fuel_cost)} DA</p></div>
             </div>
             <div className="flex justify-between items-center border-l-4 border-green-500 pl-4">
-              <div>
-                <p className="text-sm text-gray-600">Entretien</p>
-                <p className="text-2xl font-bold">{fmt(kpis.total_maintenance_cost)} DA</p>
-              </div>
+              <div><p className="text-sm text-gray-600">Entretien</p><p className="text-2xl font-bold">{fmt(kpis.total_maintenance_cost)} DA</p></div>
             </div>
             <div className="flex justify-between items-center border-l-4 border-yellow-500 pl-4">
-              <div>
-                <p className="text-sm text-gray-600">Pneus</p>
-                <p className="text-2xl font-bold">{fmt(kpis.total_tire_cost)} DA</p>
-              </div>
+              <div><p className="text-sm text-gray-600">Pneus</p><p className="text-2xl font-bold">{fmt(kpis.total_tire_cost)} DA</p></div>
             </div>
             <div className="flex justify-between items-center border-l-4 border-orange-500 pl-4">
-              <div>
-                <p className="text-sm text-gray-600">Autres Dépenses</p>
-                <p className="text-2xl font-bold">{fmt(kpis.total_expenses)} DA</p>
-              </div>
+              <div><p className="text-sm text-gray-600">Autres Dépenses</p><p className="text-2xl font-bold">{fmt(kpis.total_expenses)} DA</p></div>
             </div>
             <div className="border-t pt-4 mt-4">
               <div className="flex justify-between items-center">
@@ -230,7 +226,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Alertes */}
       {kpis.active_alerts > 0 && (
         <div className="bg-yellow-50 border-l-4 border-yellow-500 p-4 rounded">
           <div className="flex items-center gap-2 mb-2">
