@@ -56,7 +56,9 @@ export const updateReminder = (id: number, data: any) => api.put<Reminder>(`/rem
 export const deleteReminder = (id: number) => api.delete(`/reminders/${id}`);
 
 // ==================== DASHBOARD ====================
-export const getKPIs = () => api.get<KPIs>('/dashboard/kpis');
+// Remplacez l'ancienne ligne getKPIs par celle-ci :
+export const getKPIs = (vehicleId?: number) => 
+  api.get<KPIs>('/dashboard/kpis', { params: { vehicle_id: vehicleId } });export const getKPIs = () => api.get<KPIs>('/dashboard/kpis');
 export const getAlerts = () => api.get<Alert[]>('/dashboard/alerts');
 
 // ==================== EXPORTS ====================
