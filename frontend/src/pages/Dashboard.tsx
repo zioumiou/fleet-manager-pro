@@ -172,21 +172,21 @@ export default function Dashboard() {
             <ResponsiveContainer width="100%" height={300}>
               <PieChart>
                 <Pie 
-                  data={costData} 
-                  cx="50%" 
-                  cy="50%" 
-                  innerRadius={60} 
-                  outerRadius={100} 
-                  paddingAngle={5} 
-                  dataKey="value"
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                >
-                  {costData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip formatter={(value: number) => `${fmt(value)} DA`} />
-                <Legend />
+				  data={costData} 
+				  cx="50%" 
+				  cy="50%" 
+				  innerRadius={60} 
+				  outerRadius={100} 
+				  paddingAngle={5} 
+				  dataKey="value"
+				  label={({ name, percent }: any) => `${name} ${(percent ? percent * 100 : 0).toFixed(0)}%`}
+				>
+				  {costData.map((entry, index) => (
+					<Cell key={`cell-${index}`} fill={entry.color} />
+				  ))}
+				</Pie>
+				<Tooltip formatter={(value: any) => (value !== undefined ? `${fmt(value)} DA` : '0 DA')} />
+				<Legend />
               </PieChart>
             </ResponsiveContainer>
           )}

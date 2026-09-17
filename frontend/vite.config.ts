@@ -12,9 +12,9 @@ export default defineConfig({
         name: 'FleetManager Pro',
         short_name: 'FleetManager',
         description: 'Application de gestion de flotte automobile',
-        theme_color: '#2563eb', // Bleu professionnel
+        theme_color: '#2563eb',
         background_color: '#ffffff',
-        display: 'standalone', // Ouvre en plein écran comme une app native
+        display: 'standalone',
         orientation: 'portrait',
         scope: '/',
         start_url: '/',
@@ -33,7 +33,7 @@ export default defineConfig({
             src: 'pwa-512x512.png',
             sizes: '512x512',
             type: 'image/png',
-            purpose: 'any maskable' // Pour les icônes adaptatives Android
+            purpose: 'any maskable'
           }
         ]
       }
