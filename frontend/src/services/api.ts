@@ -1,15 +1,13 @@
 import axios from 'axios';
 import { Vehicle, Maintenance, Fuel, Expense, KPIs, Alert, Document, Tire, Reminder, VehicleTCO } from '../types';
-import { getDB, isOnline, showOfflineAlert } from './localDB';
+import { getDB, isOnline, addToSyncQueue, showOfflineAlert } from './localDB';
 
 const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_BASE = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;
 const api = axios.create({ baseURL: API_BASE });
 
-// ✅ Type explicite pour les noms de stores IndexedDB
 type StoreName = 'vehicles' | 'maintenances' | 'fuels' | 'expenses' | 'tires' | 'reminders' | 'kpis' | 'alerts';
 
-// Helper avec typage correct et getDB() asynchrone
 const fetchWithCache = async <T>(
   endpoint: string,
   storeName: StoreName,
@@ -35,7 +33,6 @@ const fetchWithCache = async <T>(
     }
   }
 
-  // Fallback : données locales
   if (cacheKey) {
     const cached = await db.get(storeName, cacheKey);
     return { data: (cached as T) || ([] as any) };
@@ -48,26 +45,53 @@ const fetchWithCache = async <T>(
 export const getVehicles = () => fetchWithCache<Vehicle[]>('/vehicles/', 'vehicles');
 
 export const createVehicle = async (data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.post<Vehicle>('/vehicles/', data);
   const db = await getDB();
-  await db.put('vehicles', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.post<Vehicle>('/vehicles/', data);
+      await db.put('vehicles', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  const localData = { ...data, id: Date.now() };
+  await db.put('vehicles', localData);
+  await addToSyncQueue('create', 'vehicles', localData);
+  showOfflineAlert();
+  return { data: localData };
 };
 
 export const updateVehicle = async (id: number, data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.put<Vehicle>(`/vehicles/${id}`, data);
   const db = await getDB();
-  await db.put('vehicles', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.put<Vehicle>(`/vehicles/${id}`, data);
+      await db.put('vehicles', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await db.put('vehicles', { ...data, id });
+  await addToSyncQueue('update', 'vehicles', { ...data, id });
+  showOfflineAlert();
+  return { data: { ...data, id } };
 };
 
 export const deleteVehicle = async (id: number) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  await api.delete(`/vehicles/${id}`);
   const db = await getDB();
-  await db.delete('vehicles', id);
+  if (isOnline()) {
+    try {
+      await api.delete(`/vehicles/${id}`);
+      await db.delete('vehicles', id);
+      return { data: { id } };
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await addToSyncQueue('delete', 'vehicles', { id });
+  showOfflineAlert();
   return { data: { id } };
 };
 
@@ -84,7 +108,6 @@ export const uploadDocument = async (vehicleId: number, documentType: string, fi
 };
 
 export const getVehicleDocuments = (vehicleId: number) => api.get<Document[]>(`/documents/vehicles/${vehicleId}/`);
-
 export const deleteDocument = async (docId: number) => {
   if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
   return api.delete(`/documents/${docId}`);
@@ -95,26 +118,53 @@ export const getMaintenances = (vehicleId?: number) =>
   fetchWithCache<Maintenance[]>('/maintenances/', 'maintenances', { vehicle_id: vehicleId });
 
 export const createMaintenance = async (data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.post<Maintenance>('/maintenances/', data);
   const db = await getDB();
-  await db.put('maintenances', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.post<Maintenance>('/maintenances/', data);
+      await db.put('maintenances', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  const localData = { ...data, id: Date.now() };
+  await db.put('maintenances', localData);
+  await addToSyncQueue('create', 'maintenances', localData);
+  showOfflineAlert();
+  return { data: localData };
 };
 
 export const updateMaintenance = async (id: number, data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.put<Maintenance>(`/maintenances/${id}`, data);
   const db = await getDB();
-  await db.put('maintenances', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.put<Maintenance>(`/maintenances/${id}`, data);
+      await db.put('maintenances', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await db.put('maintenances', { ...data, id });
+  await addToSyncQueue('update', 'maintenances', { ...data, id });
+  showOfflineAlert();
+  return { data: { ...data, id } };
 };
 
 export const deleteMaintenance = async (id: number) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  await api.delete(`/maintenances/${id}`);
   const db = await getDB();
-  await db.delete('maintenances', id);
+  if (isOnline()) {
+    try {
+      await api.delete(`/maintenances/${id}`);
+      await db.delete('maintenances', id);
+      return { data: { id } };
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await addToSyncQueue('delete', 'maintenances', { id });
+  showOfflineAlert();
   return { data: { id } };
 };
 
@@ -123,26 +173,53 @@ export const getFuels = (vehicleId?: number) =>
   fetchWithCache<Fuel[]>('/fuels/', 'fuels', { vehicle_id: vehicleId });
 
 export const createFuel = async (data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.post<Fuel>('/fuels/', data);
   const db = await getDB();
-  await db.put('fuels', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.post<Fuel>('/fuels/', data);
+      await db.put('fuels', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  const localData = { ...data, id: Date.now() };
+  await db.put('fuels', localData);
+  await addToSyncQueue('create', 'fuels', localData);
+  showOfflineAlert();
+  return { data: localData };
 };
 
 export const updateFuel = async (id: number, data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.put<Fuel>(`/fuels/${id}`, data);
   const db = await getDB();
-  await db.put('fuels', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.put<Fuel>(`/fuels/${id}`, data);
+      await db.put('fuels', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await db.put('fuels', { ...data, id });
+  await addToSyncQueue('update', 'fuels', { ...data, id });
+  showOfflineAlert();
+  return { data: { ...data, id } };
 };
 
 export const deleteFuel = async (id: number) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  await api.delete(`/fuels/${id}`);
   const db = await getDB();
-  await db.delete('fuels', id);
+  if (isOnline()) {
+    try {
+      await api.delete(`/fuels/${id}`);
+      await db.delete('fuels', id);
+      return { data: { id } };
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await addToSyncQueue('delete', 'fuels', { id });
+  showOfflineAlert();
   return { data: { id } };
 };
 
@@ -151,26 +228,53 @@ export const getExpenses = (vehicleId?: number) =>
   fetchWithCache<Expense[]>('/expenses/', 'expenses', { vehicle_id: vehicleId });
 
 export const createExpense = async (data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.post<Expense>('/expenses/', data);
   const db = await getDB();
-  await db.put('expenses', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.post<Expense>('/expenses/', data);
+      await db.put('expenses', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  const localData = { ...data, id: Date.now() };
+  await db.put('expenses', localData);
+  await addToSyncQueue('create', 'expenses', localData);
+  showOfflineAlert();
+  return { data: localData };
 };
 
 export const updateExpense = async (id: number, data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.put<Expense>(`/expenses/${id}`, data);
   const db = await getDB();
-  await db.put('expenses', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.put<Expense>(`/expenses/${id}`, data);
+      await db.put('expenses', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await db.put('expenses', { ...data, id });
+  await addToSyncQueue('update', 'expenses', { ...data, id });
+  showOfflineAlert();
+  return { data: { ...data, id } };
 };
 
 export const deleteExpense = async (id: number) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  await api.delete(`/expenses/${id}`);
   const db = await getDB();
-  await db.delete('expenses', id);
+  if (isOnline()) {
+    try {
+      await api.delete(`/expenses/${id}`);
+      await db.delete('expenses', id);
+      return { data: { id } };
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await addToSyncQueue('delete', 'expenses', { id });
+  showOfflineAlert();
   return { data: { id } };
 };
 
@@ -181,18 +285,36 @@ export const getTires = (vehicleId?: number) =>
   fetchWithCache<Tire[]>('/tires/', 'tires', { vehicle_id: vehicleId });
 
 export const createTire = async (data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.post<Tire>('/tires/', data);
   const db = await getDB();
-  await db.put('tires', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.post<Tire>('/tires/', data);
+      await db.put('tires', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  const localData = { ...data, id: Date.now() };
+  await db.put('tires', localData);
+  await addToSyncQueue('create', 'tires', localData);
+  showOfflineAlert();
+  return { data: localData };
 };
 
 export const deleteTire = async (id: number) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  await api.delete(`/tires/${id}`);
   const db = await getDB();
-  await db.delete('tires', id);
+  if (isOnline()) {
+    try {
+      await api.delete(`/tires/${id}`);
+      await db.delete('tires', id);
+      return { data: { id } };
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await addToSyncQueue('delete', 'tires', { id });
+  showOfflineAlert();
   return { data: { id } };
 };
 
@@ -200,26 +322,53 @@ export const deleteTire = async (id: number) => {
 export const getReminders = () => fetchWithCache<Reminder[]>('/reminders/', 'reminders');
 
 export const createReminder = async (data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.post<Reminder>('/reminders/', data);
   const db = await getDB();
-  await db.put('reminders', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.post<Reminder>('/reminders/', data);
+      await db.put('reminders', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  const localData = { ...data, id: Date.now() };
+  await db.put('reminders', localData);
+  await addToSyncQueue('create', 'reminders', localData);
+  showOfflineAlert();
+  return { data: localData };
 };
 
 export const updateReminder = async (id: number, data: any) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  const res = await api.put<Reminder>(`/reminders/${id}`, data);
   const db = await getDB();
-  await db.put('reminders', res.data);
-  return res;
+  if (isOnline()) {
+    try {
+      const res = await api.put<Reminder>(`/reminders/${id}`, data);
+      await db.put('reminders', res.data);
+      return res;
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await db.put('reminders', { ...data, id });
+  await addToSyncQueue('update', 'reminders', { ...data, id });
+  showOfflineAlert();
+  return { data: { ...data, id } };
 };
 
 export const deleteReminder = async (id: number) => {
-  if (!isOnline()) { showOfflineAlert(); throw new Error('Hors ligne'); }
-  await api.delete(`/reminders/${id}`);
   const db = await getDB();
-  await db.delete('reminders', id);
+  if (isOnline()) {
+    try {
+      await api.delete(`/reminders/${id}`);
+      await db.delete('reminders', id);
+      return { data: { id } };
+    } catch (error) {
+      console.error('Erreur réseau, mise en file d\'attente...');
+    }
+  }
+  await addToSyncQueue('delete', 'reminders', { id });
+  showOfflineAlert();
   return { data: { id } };
 };
 

@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { getKPIs, getAlerts, getVehicles } from '../services/api';
+import { getPendingSync } from '../services/localDB';
 import { KPIs, Alert, Vehicle } from '../types';
-import { Car, TrendingUp, Fuel, DollarSign, AlertTriangle, Filter, PieChart as PieChartIcon } from 'lucide-react';
+import { Car, TrendingUp, Fuel, DollarSign, AlertTriangle, Filter, PieChart as PieChartIcon, Wifi, WifiOff, RefreshCw } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 
 export default function Dashboard() {
@@ -11,9 +12,9 @@ export default function Dashboard() {
   const [selectedVehicleId, setSelectedVehicleId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // ✅ Indicateur de connexion (correctement placé DANS le composant)
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncing, setSyncing] = useState(false);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -25,6 +26,23 @@ export default function Dashboard() {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    const updateSyncStatus = async () => {
+      if (!isOnline) {
+        const pending = await getPendingSync();
+        setPendingCount(pending.length);
+        return;
+      }
+      setSyncing(true);
+      const pending = await getPendingSync();
+      setPendingCount(pending.length);
+      setSyncing(false);
+    };
+    updateSyncStatus();
+    const interval = setInterval(updateSyncStatus, 3000);
+    return () => clearInterval(interval);
+  }, [isOnline]);
 
   useEffect(() => {
     getVehicles()
@@ -69,10 +87,35 @@ export default function Dashboard() {
 
   return (
     <div className="p-2">
-      {/* ✅ Alerte hors ligne visible uniquement si déconnecté */}
-      {!isOnline && (
-        <div className="bg-yellow-500 text-white p-3 rounded mb-4 text-center font-semibold shadow-md">
-          ⚠️ Mode hors ligne actif - Vous consultez les données en cache
+      {/* Indicateur de statut de synchronisation */}
+      {!isOnline && pendingCount > 0 && (
+        <div className="bg-yellow-500 text-white p-3 rounded mb-4 text-center font-semibold shadow-md flex items-center justify-center gap-2">
+          <WifiOff size={20} />
+          <span>Mode hors ligne - {pendingCount} modification(s) en attente de synchronisation</span>
+        </div>
+      )}
+      {!isOnline && pendingCount === 0 && (
+        <div className="bg-yellow-500 text-white p-3 rounded mb-4 text-center font-semibold shadow-md flex items-center justify-center gap-2">
+          <WifiOff size={20} />
+          <span>Mode hors ligne - Aucune modification en attente</span>
+        </div>
+      )}
+      {isOnline && syncing && (
+        <div className="bg-blue-500 text-white p-3 rounded mb-4 text-center font-semibold shadow-md flex items-center justify-center gap-2">
+          <RefreshCw size={20} className="animate-spin" />
+          <span>Synchronisation en cours...</span>
+        </div>
+      )}
+      {isOnline && !syncing && pendingCount > 0 && (
+        <div className="bg-orange-500 text-white p-3 rounded mb-4 text-center font-semibold shadow-md flex items-center justify-center gap-2">
+          <RefreshCw size={20} />
+          <span>{pendingCount} élément(s) en attente de synchronisation</span>
+        </div>
+      )}
+      {isOnline && !syncing && pendingCount === 0 && (
+        <div className="bg-green-500 text-white p-3 rounded mb-4 text-center font-semibold shadow-md flex items-center justify-center gap-2">
+          <Wifi size={20} />
+          <span>Toutes les données sont synchronisées</span>
         </div>
       )}
 
@@ -85,7 +128,7 @@ export default function Dashboard() {
             onChange={(e) => setSelectedVehicleId(e.target.value ? parseInt(e.target.value) : null)}
             className="border-none focus:ring-0 text-gray-700 font-medium bg-transparent cursor-pointer outline-none"
           >
-            <option value=""> Tous les véhicules (Global)</option>
+            <option value="">🌍 Tous les véhicules (Global)</option>
             {vehicles.map(v => (
               <option key={v.id} value={v.id}>🚗 {v.license_plate} - {v.brand} {v.model}</option>
             ))}
