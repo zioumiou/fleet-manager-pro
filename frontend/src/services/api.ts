@@ -56,9 +56,10 @@ export const updateReminder = (id: number, data: any) => api.put<Reminder>(`/rem
 export const deleteReminder = (id: number) => api.delete(`/reminders/${id}`);
 
 // ==================== DASHBOARD ====================
-// Remplacez l'ancienne ligne getKPIs par celle-ci :
+// ✅ Version unique et propre qui accepte l'ID du véhicule en option
 export const getKPIs = (vehicleId?: number) => 
-  api.get<KPIs>('/dashboard/kpis', { params: { vehicle_id: vehicleId } });export const getKPIs = () => api.get<KPIs>('/dashboard/kpis');
+  api.get<KPIs>('/dashboard/kpis', { params: { vehicle_id: vehicleId } });
+  
 export const getAlerts = () => api.get<Alert[]>('/dashboard/alerts');
 
 // ==================== EXPORTS ====================
