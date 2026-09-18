@@ -9,7 +9,7 @@ export default function Vehicles() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [expandedVehicleId, setExpandedVehicleId] = useState<number | null>(null);
-  const [tco, setTco] = useState<VehicleTCO | null>(null);
+  //const [tco, setTco] = useState<VehicleTCO | null>(null);
   const [formData, setFormData] = useState({
     license_plate: '',
     brand: '',
@@ -75,32 +75,32 @@ export default function Vehicles() {
   };
 
   const handleEdit = (vehicle: Vehicle) => {
-    setEditingId(vehicle.id);
-    setFormData({
-      license_plate: vehicle.license_plate,
-      brand: vehicle.brand,
-      model: vehicle.model,
-      year: vehicle.year,
-      fuel_type: vehicle.fuel_type,
-      current_mileage: vehicle.current_mileage,
-      initial_mileage: vehicle.initial_mileage,
-      purchase_date: vehicle.purchase_date,
-      purchase_price: vehicle.purchase_price,
-      resale_price: vehicle.resale_price || 0,
-      status: vehicle.status
-    });
-    setShowForm(true);
-  };
+	  setEditingId(vehicle.id);
+	  setFormData({
+		license_plate: vehicle.license_plate || '',
+		brand: vehicle.brand || '',
+		model: vehicle.model || '',
+		year: vehicle.year || new Date().getFullYear(),
+		fuel_type: vehicle.fuel_type || 'Essence',       // ✅ Sécurisé
+		current_mileage: vehicle.current_mileage || 0,   // ✅ Sécurisé
+		initial_mileage: vehicle.initial_mileage || 0,
+		purchase_date: vehicle.purchase_date || new Date().toISOString().split('T')[0],
+		purchase_price: vehicle.purchase_price || 0,
+		resale_price: vehicle.resale_price || 0,
+		status: vehicle.status || 'Actif'                // ✅ Sécurisé
+	  });
+	  setShowForm(true);
+	};
 
   const handleTCO = async (id: number) => {
-    try {
-      const res = await getVehicleTCO(id);
-      setTco(res.data);
-      alert(`Coût Total de Possession: ${res.data.total_cost.toFixed(2)} DA`);
-    } catch (error) {
-      alert("Erreur lors du calcul du TCO");
-    }
-  };
+	  try {
+		const res = await getVehicleTCO(id);
+		// ✅ Utilisez total_tco au lieu de total_cost
+		alert(`Coût Total de Possession: ${res.data.total_tco.toFixed(2)} DA`);
+	  } catch (error) {
+		alert("Erreur lors du calcul du TCO");
+	  }
+	};
 
   const handleExportCSV = async () => {
     try {

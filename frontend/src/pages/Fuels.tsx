@@ -92,7 +92,7 @@ export default function Fuels() {
       price_per_liter: fuel.price_per_liter,
       total_cost: fuel.total_cost,
       station: fuel.station || '',
-      full_tank: (fuel.full_tank === 1 || fuel.full_tank === true) ? 'Oui' : 'Non'
+      full_tank: (Number(fuel.full_tank) === 1 || fuel.full_tank === true) ? 'Oui' : 'Non'
     });
     setShowForm(true);
   };
