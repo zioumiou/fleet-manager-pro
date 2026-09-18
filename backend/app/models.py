@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey
 from sqlalchemy.orm import relationship
-from datetime import datetime
+from datetime import datetime, date
 from .database import Base
 
 class Vehicle(Base):
@@ -27,16 +27,6 @@ class Vehicle(Base):
     tires = relationship("Tire", back_populates="vehicle", cascade="all, delete-orphan") # NOUVEAU
     reminders = relationship("Reminder", back_populates="vehicle", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="vehicle", cascade="all, delete-orphan")
-
-class Document(Base):
-    __tablename__ = "documents"
-    id = Column(Integer, primary_key=True, index=True)
-    vehicle_id = Column(Integer, ForeignKey("vehicles.id"))
-    document_type = Column(String)
-    file_name = Column(String)
-    file_path = Column(String)
-    upload_date = Column(DateTime, default=datetime.utcnow)
-    vehicle = relationship("Vehicle", back_populates="documents")
 
 class Maintenance(Base):
     __tablename__ = "maintenances"
