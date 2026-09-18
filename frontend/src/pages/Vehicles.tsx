@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getVehicles, createVehicle, updateVehicle, deleteVehicle, getVehicleTCO, exportVehiclesCSV, exportVehiclesExcel, downloadFile } from '../services/api';
-import { Vehicle, VehicleTCO } from '../types';
+import { Vehicle } from '../types';
 import { Plus, Trash2, Edit, Download, FileUp } from 'lucide-react';
 import DocumentManager from '../components/DocumentManager';
 

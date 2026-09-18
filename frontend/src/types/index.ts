@@ -58,11 +58,16 @@ export interface Tire {
 
 export interface Reminder {
   id: number;
+  vehicle_id: number;          // ✅ Ajouté
   vehicle_plate: string;
   category: string;
   next_due_date: string;
+  next_due_mileage?: number;   // ✅ Ajouté
   km_threshold?: number;
+  km_remaining?: number;       // ✅ Ajouté
+  days_remaining?: number;     // ✅ Ajouté
   description: string;
+  notes?: string;              // ✅ Ajouté
   status?: string;
 }
 
@@ -106,6 +111,7 @@ export interface Alert {
   current_value: number;
   threshold_value: number;
   km_remaining: number;
+  days_remaining?: number;     // ✅ Ajouté
   severity: string;
 }
 
