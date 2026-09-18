@@ -257,8 +257,7 @@ export default function Reminders() {
                   </td>
                   <td className="px-6 py-4">{r.next_due_date ? new Date(r.next_due_date).toLocaleDateString('fr-FR') : '-'}</td>
                   <td className="px-6 py-4">{r.next_due_mileage ? `${r.next_due_mileage.toLocaleString()} km` : '-'}</td>
-                  <td className="px-6 py-4">{getStatusBadge(r.status, r.days_remaining, r.km_remaining)}</td>
-                  <td className="px-6 py-4">
+				  <td className="px-6 py-4">{getStatusBadge(r.status || 'green', r.days_remaining || null, r.km_remaining || null)}</td>                  <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button onClick={() => handleEdit(r)} className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded" title="Modifier"><Edit size={18} /></button>
                       <button onClick={async () => { if(confirm('Supprimer ce rappel ?')) { await deleteReminder(r.id); loadData(); } }} className="text-red-600 hover:text-red-800 p-1 hover:bg-red-50 rounded" title="Supprimer"><Trash2 size={18} /></button>
