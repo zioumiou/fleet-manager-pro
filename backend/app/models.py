@@ -26,6 +26,7 @@ class Vehicle(Base):
     expenses = relationship("Expense", back_populates="vehicle", cascade="all, delete-orphan")
     tires = relationship("Tire", back_populates="vehicle", cascade="all, delete-orphan") # NOUVEAU
     reminders = relationship("Reminder", back_populates="vehicle", cascade="all, delete-orphan")
+    documents = relationship("Document", back_populates="vehicle", cascade="all, delete-orphan")
 
 class Document(Base):
     __tablename__ = "documents"
@@ -98,3 +99,16 @@ class Reminder(Base):
     
     vehicle = relationship("Vehicle", back_populates="reminders")
     
+# Ajouter cette classe dans models.py
+class Document(Base):
+    __tablename__ = "documents"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=False)
+    document_type = Column(String(100), nullable=False)
+    file_path = Column(String(500), nullable=False)
+    file_name = Column(String(255), nullable=False)
+    file_size = Column(Integer, nullable=False)
+    upload_date = Column(Date, nullable=False, default=date.today)
+    
+    vehicle = relationship("Vehicle", back_populates="documents")

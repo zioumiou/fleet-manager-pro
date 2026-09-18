@@ -30,7 +30,30 @@ def get_kpis(vehicle_id: Optional[int] = Query(None), db: Session = Depends(get_
             }
 
         # 2. Calculs de base
-        total_mileage = sum(v.current_mileage or 0 for v in vehicles)
+        # 2. Calculs de base - Kilométrage total (MAX entre véhicule et entrées)
+        vehicle_mileages = [v.current_mileage or 0 for v in vehicles]
+
+        # Récupérer le km max des entrées de carburant
+        fuel_mileages = []
+        for v in vehicles:
+            max_fuel_km = db.query(func.max(models.Fuel.mileage)).filter(
+                models.Fuel.vehicle_id == v.id
+            ).scalar()
+            if max_fuel_km:
+                fuel_mileages.append(max_fuel_km)
+
+        # Récupérer le km max des entretiens
+        maintenance_mileages = []
+        for v in vehicles:
+            max_maint_km = db.query(func.max(models.Maintenance.mileage)).filter(
+                models.Maintenance.vehicle_id == v.id
+            ).scalar()
+            if max_maint_km:
+                maintenance_mileages.append(max_maint_km)
+
+        # Le kilométrage total est le MAX de toutes ces valeurs
+        all_mileages = vehicle_mileages + fuel_mileages + maintenance_mileages
+        total_mileage = max(all_mileages) if all_mileages else 0
         
         # 3. Coûts totaux
         total_fuel_cost = 0.0

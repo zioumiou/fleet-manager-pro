@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routers import vehicles, maintenances, fuels, expenses, dashboard, export, documents, tires, reminders
+from .routers import documents
 
 app = FastAPI(title="FleetManager Pro API")
 

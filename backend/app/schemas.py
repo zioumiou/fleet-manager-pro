@@ -180,3 +180,17 @@ class AlertResponse(BaseModel):
     days_remaining: Optional[int] = None
     km_remaining: Optional[int] = None
     severity: str
+    
+class DocumentBase(BaseModel):
+    document_type: str
+    file_name: str
+    file_size: int
+
+class Document(DocumentBase):
+    id: int
+    vehicle_id: int
+    file_path: str
+    upload_date: date
+    
+    class Config:
+        from_attributes = True

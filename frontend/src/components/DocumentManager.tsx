@@ -1,168 +1,122 @@
 import { useState, useEffect } from 'react';
 import { uploadDocument, getVehicleDocuments, deleteDocument } from '../services/api';
-import { Document } from '../types';
-import { Upload, Trash2, FileText, X } from 'lucide-react';
+import { Document as DocumentType } from '../types';
+import { Upload, Trash2, Download, FileText, Image, File } from 'lucide-react';
 
 interface DocumentManagerProps {
   vehicleId: number;
-  vehicleName: string;
-  onClose: () => void;
+  vehiclePlate: string;
 }
 
-export default function DocumentManager({ vehicleId, vehicleName, onClose }: DocumentManagerProps) {
-  const [documents, setDocuments] = useState<Document[]>([]);
+export default function DocumentManager({ vehicleId, vehiclePlate }: DocumentManagerProps) {
+  const [documents, setDocuments] = useState<DocumentType[]>([]);
   const [uploading, setUploading] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [documentType, setDocumentType] = useState('Carte Grise');
+  const [documentType, setDocumentType] = useState('Carte grise');
+  const [showUploadForm, setShowUploadForm] = useState(false);
 
-  useEffect(() => {
-    loadDocuments();
-  }, [vehicleId]);
+  useEffect(() => { loadDocuments(); }, [vehicleId]);
 
   const loadDocuments = async () => {
     try {
       const res = await getVehicleDocuments(vehicleId);
       setDocuments(Array.isArray(res.data) ? res.data : []);
-    } catch (error) {
-      console.error("Erreur chargement documents", error);
-    }
+    } catch (error) { console.error(error); }
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setSelectedFile(e.target.files[0]);
-    }
-  };
-
-  const handleUpload = async () => {
+  const handleUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
     if (!selectedFile) return;
-    
     setUploading(true);
     try {
       await uploadDocument(vehicleId, documentType, selectedFile);
       setSelectedFile(null);
-      // Réinitialiser l'input file
-      const fileInput = document.getElementById('file-upload') as HTMLInputElement;
-      if (fileInput) fileInput.value = '';
-      loadDocuments();
-    } catch (error) {
-      console.error("Erreur upload", error);
-      alert("Erreur lors de l'upload du document");
+      setShowUploadForm(false);
+      await loadDocuments();
+      alert('Document uploadé avec succès !');
+    } catch (error: any) {
+      alert(error.response?.data?.detail || "Erreur upload");
     }
     setUploading(false);
   };
 
   const handleDelete = async (docId: number) => {
-    if (confirm('Supprimer ce document ?')) {
-      try {
-        await deleteDocument(docId);
-        loadDocuments();
-      } catch (error) {
-        console.error("Erreur suppression", error);
-      }
-    }
+    if (!confirm('Supprimer ce document ?')) return;
+    try {
+      await deleteDocument(docId);
+      await loadDocuments();
+    } catch (error) { alert("Erreur suppression"); }
   };
 
-  const getDocumentIcon = (type: string) => {
-    const icons: Record<string, string> = {
-      'Carte Grise': '📄',
-      'Assurance': '🛡️',
-      'Visite Technique': '🔍',
-      'Facture': '🧾',
-      'Permis': '🪪',
-      'Autre': '📎'
-    };
-    return icons[type] || '📎';
+  const getFileIcon = (fileName: string) => {
+    const ext = fileName.split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png'].includes(ext || '')) return <Image size={20} className="text-blue-500" />;
+    if (ext === 'pdf') return <FileText size={20} className="text-red-500" />;
+    return <File size={20} className="text-gray-500" />;
   };
+
+  const formatSize = (bytes: number) => {
+    if (bytes < 1024) return bytes + ' o';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' Ko';
+    return (bytes / 1048576).toFixed(1) + ' Mo';
+  };
+
+  const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        {/* En-tête */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200 sticky top-0 bg-white z-10">
-          <h2 className="text-xl font-bold text-gray-800">
-            📎 Documents - {vehicleName}
-          </h2>
-          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 p-1 hover:bg-gray-100 rounded-full">
-            <X size={24} />
-          </button>
-        </div>
-
-        {/* Zone d'upload */}
-        <div className="p-6 border-b border-gray-200 bg-gray-50">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">Ajouter un document</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <select
-              value={documentType}
-              onChange={(e) => setDocumentType(e.target.value)}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none bg-white"
-            >
-              <option value="Carte Grise">Carte Grise</option>
-              <option value="Assurance">Assurance</option>
-              <option value="Visite Technique">Visite Technique</option>
-              <option value="Facture">Facture</option>
-              <option value="Permis">Permis</option>
-              <option value="Autre">Autre</option>
-            </select>
-            
-            <input
-              id="file-upload"
-              type="file"
-              onChange={handleFileChange}
-              className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-            />
-            
-            <button
-              onClick={handleUpload}
-              disabled={!selectedFile || uploading}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition"
-            >
-              <Upload size={18} />
-              {uploading ? 'Upload...' : 'Uploader'}
-            </button>
-          </div>
-        </div>
-
-        {/* Liste des documents */}
-        <div className="p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-3">
-            Documents existants ({documents.length})
-          </h3>
-          
-          {documents.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              <FileText size={48} className="mx-auto mb-2 opacity-50" />
-              <p>Aucun document pour ce véhicule</p>
-            </div>
-          ) : (
-            <div className="space-y-2">
-              {documents.map((doc) => (
-                <div
-                  key={doc.id}
-                  className="flex items-center justify-between p-3 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{getDocumentIcon(doc.document_type)}</span>
-                    <div>
-                      <p className="font-medium text-gray-800">{doc.file_name}</p>
-                      <p className="text-xs text-gray-500">
-                        {doc.document_type} • Ajouté le {new Date(doc.upload_date).toLocaleDateString('fr-FR')}
-                      </p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDelete(doc.id)}
-                    className="text-red-600 hover:text-red-800 p-2 hover:bg-red-50 rounded transition"
-                    title="Supprimer"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+    <div className="bg-white rounded-lg shadow p-6 mt-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold text-gray-800">📄 Documents - {vehiclePlate}</h3>
+        <button onClick={() => setShowUploadForm(!showUploadForm)} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700">
+          <Upload size={18} /> {showUploadForm ? 'Annuler' : 'Ajouter'}
+        </button>
       </div>
+
+      {showUploadForm && (
+        <form onSubmit={handleUpload} className="mb-6 p-4 bg-gray-50 rounded-lg border">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Type</label>
+              <select value={documentType} onChange={(e) => setDocumentType(e.target.value)} className="w-full border rounded-lg px-3 py-2 bg-white">
+                <option value="Carte grise">Carte grise</option>
+                <option value="Assurance">Assurance</option>
+                <option value="Contrôle technique">Contrôle technique</option>
+                <option value="Permis de conduire">Permis de conduire</option>
+                <option value="Autre">Autre</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Fichier (PDF, JPG, PNG)</label>
+              <input type="file" onChange={(e) => setSelectedFile(e.target.files?.[0] || null)} accept=".pdf,.jpg,.jpeg,.png" className="w-full border rounded-lg px-3 py-2" required />
+            </div>
+          </div>
+          <button type="submit" disabled={uploading || !selectedFile} className="bg-blue-600 text-white px-4 py-2 rounded-lg disabled:bg-gray-400">
+            {uploading ? 'Upload...' : 'Uploader'}
+          </button>
+        </form>
+      )}
+
+      {documents.length === 0 ? (
+        <p className="text-center text-gray-500 py-8">Aucun document</p>
+      ) : (
+        <div className="space-y-2">
+          {documents.map((doc) => (
+            <div key={doc.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border hover:bg-gray-100">
+              <div className="flex items-center gap-3">
+                {getFileIcon(doc.file_name)}
+                <div>
+                  <p className="font-medium">{doc.document_type}</p>
+                  <p className="text-sm text-gray-500">{doc.file_name} • {formatSize(doc.file_size)} • {new Date(doc.upload_date).toLocaleDateString('fr-FR')}</p>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <a href={`${API_URL}/api/documents/${doc.id}/download`} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:bg-blue-50 p-2 rounded"><Download size={18} /></a>
+                <button onClick={() => handleDelete(doc.id)} className="text-red-600 hover:bg-red-50 p-2 rounded"><Trash2 size={18} /></button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
