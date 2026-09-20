@@ -75,7 +75,10 @@ export default function Reminders() {
     setShowForm(true);
   };
 
-  const getStatusBadge = (status: string, days: number | null | undefined, km: number | null | undefined) => {
+  // ✅ CORRECTION TS : On accepte 'string | undefined' et on met une valeur par défaut
+  const getStatusBadge = (status: string | undefined, days: number | null | undefined, km: number | null | undefined) => {
+    const safeStatus = status || 'green'; // Fallback sécurisé
+    
     const colors: Record<string, string> = {
       green: 'bg-green-100 text-green-800 border-green-200',
       orange: 'bg-orange-100 text-orange-800 border-orange-200',
@@ -88,8 +91,8 @@ export default function Reminders() {
     };
     
     let text = "OK";
-    if (status === 'red') text = "Dépassé !";
-    else if (status === 'orange') {
+    if (safeStatus === 'red') text = "Dépassé !";
+    else if (safeStatus === 'orange') {
       const parts = [];
       if (days !== null && days !== undefined && days <= 30) parts.push(`${days}j`);
       if (km !== null && km !== undefined && km <= 2000) parts.push(`${km}km`);
@@ -97,8 +100,8 @@ export default function Reminders() {
     }
     
     return (
-      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${colors[status]}`}>
-        {icons[status]} {text}
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${colors[safeStatus]}`}>
+        {icons[safeStatus]} {text}
       </span>
     );
   };
@@ -177,15 +180,23 @@ export default function Reminders() {
             ) : (
               reminders.map((r) => (
                 <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 transition">
+                  {/* ✅ CORRECTION TS : Fallback 'N/A' */}
                   <td className="px-6 py-4 font-semibold dark:text-gray-200">{r.vehicle_plate || 'N/A'}</td>
                   <td className="px-6 py-4 dark:text-gray-200">
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">{r.category}</span>
                     {r.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{r.notes}</p>}
                   </td>
-                  {/* ✅ Correction ici : String() force le type pour éviter l'erreur undefined */}
-                  <td className="px-6 py-4 dark:text-gray-200">{r.next_due_date ? new Date(String(r.next_due_date)).toLocaleDateString('fr-FR') : '-'}</td>
-                  <td className="px-6 py-4 dark:text-gray-200">{r.next_due_mileage ? `${Number(r.next_due_mileage).toLocaleString()} km` : '-'}</td>
-                  <td className="px-6 py-4">{getStatusBadge(r.status, r.days_remaining, r.km_remaining)}</td>
+                  {/* ✅ CORRECTION TS : Vérification stricte avant new Date() */}
+                  <td className="px-6 py-4 dark:text-gray-200">
+                    {r.next_due_date ? new Date(r.next_due_date).toLocaleDateString('fr-FR') : '-'}
+                  </td>
+                  <td className="px-6 py-4 dark:text-gray-200">
+                    {r.next_due_mileage ? `${Number(r.next_due_mileage).toLocaleString()} km` : '-'}
+                  </td>
+                  {/* ✅ CORRECTION TS : La fonction gère maintenant 'undefined' en interne */}
+                  <td className="px-6 py-4">
+                    {getStatusBadge(r.status, r.days_remaining, r.km_remaining)}
+                  </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button onClick={() => handleEdit(r)} className="text-blue-600 hover:text-blue-800 p-1 hover:bg-blue-50 rounded"><Edit size={18} /></button>
