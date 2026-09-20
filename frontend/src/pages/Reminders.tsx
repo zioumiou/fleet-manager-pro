@@ -182,7 +182,8 @@ export default function Reminders() {
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">{r.category}</span>
                     {r.notes && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{r.notes}</p>}
                   </td>
-                  <td className="px-6 py-4 dark:text-gray-200">{r.next_due_date ? new Date(r.next_due_date).toLocaleDateString('fr-FR') : '-'}</td>
+                  {/* ✅ Correction ici : String() force le type pour éviter l'erreur undefined */}
+                  <td className="px-6 py-4 dark:text-gray-200">{r.next_due_date ? new Date(String(r.next_due_date)).toLocaleDateString('fr-FR') : '-'}</td>
                   <td className="px-6 py-4 dark:text-gray-200">{r.next_due_mileage ? `${Number(r.next_due_mileage).toLocaleString()} km` : '-'}</td>
                   <td className="px-6 py-4">{getStatusBadge(r.status, r.days_remaining, r.km_remaining)}</td>
                   <td className="px-6 py-4">
