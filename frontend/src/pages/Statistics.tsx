@@ -21,16 +21,12 @@ export default function Statistics() {
 
   const loadData = async () => {
     try {
-      const [fuelRes, maintRes, expRes, vehRes] = await Promise.all([
-        getFuels(), getMaintenances(), getExpenses(), getVehicles()
-      ]);
+      const [fuelRes, maintRes, expRes, vehRes] = await Promise.all([getFuels(), getMaintenances(), getExpenses(), getVehicles()]);
       setFuels(Array.isArray(fuelRes.data) ? fuelRes.data : []);
       setMaintenances(Array.isArray(maintRes.data) ? maintRes.data : []);
       setExpenses(Array.isArray(expRes.data) ? expRes.data : []);
       setVehicles(Array.isArray(vehRes.data) ? vehRes.data : []);
-    } catch (error) {
-      console.error("Erreur chargement statistiques", error);
-    }
+    } catch (error) { console.error("Erreur chargement statistiques", error); }
   };
 
   const filterByYear = <T extends { fuel_date?: string; maintenance_date?: string; expense_date?: string }>(data: T[]) => {
@@ -54,20 +50,17 @@ export default function Statistics() {
       const fuelTotal = filteredFuels.filter(f => new Date(f.fuel_date).getMonth() === index).reduce((sum, f) => sum + f.total_cost, 0);
       const maintTotal = filteredMaint.filter(m => new Date(m.maintenance_date).getMonth() === index).reduce((sum, m) => sum + m.cost, 0);
       const expTotal = filteredExpenses.filter(e => new Date(e.expense_date).getMonth() === index).reduce((sum, e) => sum + e.amount, 0);
-
       return { month, Carburant: fuelTotal, Entretien: maintTotal, Autres: expTotal, Total: fuelTotal + maintTotal + expTotal };
     });
   };
 
   const getMileageData = () => {
     const filteredFuels = filterByYear(fuels);
-    return filteredFuels
-      .sort((a, b) => new Date(a.fuel_date).getTime() - new Date(b.fuel_date).getTime())
-      .map(f => ({
-        date: new Date(f.fuel_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
-        km: f.mileage,
-        vehicle: vehicles.find(v => v.id === f.vehicle_id)?.license_plate || 'N/A'
-      }));
+    return filteredFuels.sort((a, b) => new Date(a.fuel_date).getTime() - new Date(b.fuel_date).getTime()).map(f => ({
+      date: new Date(f.fuel_date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+      km: f.mileage,
+      vehicle: vehicles.find(v => v.id === f.vehicle_id)?.license_plate || 'N/A'
+    }));
   };
 
   const getCategoryData = () => {
@@ -84,7 +77,6 @@ export default function Statistics() {
   const mileageData = getMileageData();
   const categoryData = getCategoryData();
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-  const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   const exportReportXLSX = (type: 'global' | 'individual') => {
     const filteredFuels = filterByVehicle(filterByYear(fuels));
@@ -97,8 +89,7 @@ export default function Statistics() {
     const totalCost = totalFuel + totalMaint + totalExpenses;
 
     const wb = XLSX.utils.book_new();
-
-    const summaryData = [
+    const summaryData: any[] = [
       [`RAPPORT ${type === 'global' ? 'GLOBAL' : 'INDIVIDUEL'} - FLEET MANAGER`],
       [`Année: ${selectedYear}`],
       type === 'individual' && selectedVehicle ? [`Véhicule: ${vehicles.find(v => v.id === selectedVehicle)?.license_plate || 'N/A'}`] : ['Tous les véhicules'],
@@ -115,50 +106,43 @@ export default function Statistics() {
     ];
 
     monthlyData.forEach(m => {
-      if (m.Total > 0) {
-        summaryData.push([m.month, m.Carburant, m.Entretien, m.Autres, m.Total]);
-      }
+      if (m.Total > 0) summaryData.push([m.month, m.Carburant, m.Entretien, m.Autres, m.Total]);
     });
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(summaryData), 'Résumé');
 
-    const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(wb, wsSummary, 'Résumé');
-
-    const fuelData = [['Date', 'Véhicule', 'Litres', 'Prix/Litre', 'Total', 'Station']];
+    const fuelData: any[] = [['Date', 'Véhicule', 'Litres', 'Prix/Litre', 'Total', 'Station']];
     filteredFuels.forEach(f => {
       const vehicle = vehicles.find(v => v.id === f.vehicle_id);
       fuelData.push([new Date(f.fuel_date).toLocaleDateString('fr-FR'), vehicle?.license_plate || 'N/A', f.liters, f.price_per_liter, f.total_cost, f.station || '']);
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(fuelData), 'Carburant');
 
-    const maintData = [['Date', 'Véhicule', 'Type', 'Description', 'Coût', 'Garage']];
+    const maintData: any[] = [['Date', 'Véhicule', 'Type', 'Description', 'Coût', 'Garage']];
     filteredMaint.forEach(m => {
       const vehicle = vehicles.find(v => v.id === m.vehicle_id);
       maintData.push([new Date(m.maintenance_date).toLocaleDateString('fr-FR'), vehicle?.license_plate || 'N/A', m.maintenance_type, m.description || '', m.cost, m.garage || '']);
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(maintData), 'Entretiens');
 
-    const expData = [['Date', 'Véhicule', 'Description', 'Montant']];
+    const expData: any[] = [['Date', 'Véhicule', 'Description', 'Montant']];
     filteredExpenses.forEach(e => {
       const vehicle = vehicles.find(v => v.id === e.vehicle_id);
       expData.push([new Date(e.expense_date).toLocaleDateString('fr-FR'), vehicle?.license_plate || 'N/A', e.description, e.amount]);
     });
     XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expData), 'Dépenses');
 
-    const fileName = `Rapport_${type}_${selectedYear}_${new Date().toISOString().split('T')[0]}.xlsx`;
-    XLSX.writeFile(wb, fileName);
+    XLSX.writeFile(wb, `Rapport_${type}_${selectedYear}_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
+
+  const fmtVal = (value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, ''];
 
   return (
     <div className={`p-2 ${isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gray-50 min-h-screen'}`}>
       <div className="flex justify-between items-center mb-6">
         <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>📊 Statistiques & Rapports</h1>
         <div className="flex gap-2">
-          <button onClick={() => exportReportXLSX('global')} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700">
-            <FileSpreadsheet size={18} /> Rapport Global XLSX
-          </button>
-          <button onClick={() => exportReportXLSX('individual')} disabled={!selectedVehicle} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
-            <FileSpreadsheet size={18} /> Rapport Individuel XLSX
-          </button>
+          <button onClick={() => exportReportXLSX('global')} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700"><FileSpreadsheet size={18} /> Rapport Global XLSX</button>
+          <button onClick={() => exportReportXLSX('individual')} disabled={!selectedVehicle} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"><FileSpreadsheet size={18} /> Rapport Individuel XLSX</button>
         </div>
       </div>
 
@@ -180,15 +164,13 @@ export default function Statistics() {
       </div>
 
       <div className={`p-6 rounded-lg shadow-sm mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          <DollarSign className="text-blue-500" /> Dépenses Mensuelles ({selectedYear})
-        </h2>
+        <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><DollarSign className="text-blue-500" /> Dépenses Mensuelles ({selectedYear})</h2>
         <ResponsiveContainer width="100%" height={350}>
           <BarChart data={monthlyData}>
             <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#4b5563' : '#e5e7eb'} />
             <XAxis dataKey="month" stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
             <YAxis stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
-            <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} formatter={(value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, '']} />
+            <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} formatter={fmtVal} />
             <Legend wrapperStyle={{ color: isDarkMode ? '#f9fafb' : '#111827' }} />
             <Bar dataKey="Carburant" fill="#3B82F6" />
             <Bar dataKey="Entretien" fill="#10B981" />
@@ -198,9 +180,7 @@ export default function Statistics() {
       </div>
 
       <div className={`p-6 rounded-lg shadow-sm mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          <TrendingUp className="text-green-500" /> Évolution du Kilométrage ({selectedYear})
-        </h2>
+        <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><TrendingUp className="text-green-500" /> Évolution du Kilométrage ({selectedYear})</h2>
         {mileageData.length === 0 ? (
           <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Aucune donnée de kilométrage pour cette période</p>
         ) : (
@@ -218,30 +198,16 @@ export default function Statistics() {
       </div>
 
       <div className={`p-6 rounded-lg shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
-        <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-          <PieChartIcon className="text-purple-500" /> Répartition des Dépenses par Catégorie
-        </h2>
+        <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}><PieChartIcon className="text-purple-500" /> Répartition des Dépenses par Catégorie</h2>
         {categoryData.length === 0 ? (
           <p className={`text-center py-8 ${isDarkMode ? 'text-gray-400' : 'text-gray-500'}`}>Aucune donnée pour cette période</p>
         ) : (
           <ResponsiveContainer width="100%" height={350}>
             <PieChart>
-              <Pie 
-                data={categoryData} 
-                cx="50%" 
-                cy="50%" 
-                outerRadius={120} 
-                dataKey="value" 
-                label={({ name, percent }: any) => `${name}: ${(Number(percent) * 100).toFixed(0)}%`}
-              >
-                {categoryData.map((_: any, index: number) => (
-                  <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                ))}
+              <Pie data={categoryData} cx="50%" cy="50%" outerRadius={120} dataKey="value" label={({ name, percent }: any) => `${name}: ${(Number(percent) * 100).toFixed(0)}%`}>
+                {categoryData.map((_: any, index: number) => (<Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />))}
               </Pie>
-              <Tooltip 
-                contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} 
-                formatter={(value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, '']} 
-              />
+              <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} formatter={fmtVal} />
             </PieChart>
           </ResponsiveContainer>
         )}
