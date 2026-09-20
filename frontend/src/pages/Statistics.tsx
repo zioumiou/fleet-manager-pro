@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { getFuels, getMaintenances, getExpenses, getVehicles } from '../services/api';
 import { Fuel, Maintenance, Expense, Vehicle } from '../types';
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Filter, TrendingUp, DollarSign, PieChart as PieChartIcon, Download, FileSpreadsheet } from 'lucide-react';
+import { Filter, TrendingUp, DollarSign, PieChart as PieChartIcon, FileSpreadsheet } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
 export default function Statistics() {
@@ -243,7 +243,7 @@ export default function Statistics() {
             <YAxis stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
             <Tooltip 
               contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }}
-              formatter={(value: any) => `${fmt(value)} DA`} 
+                 formatter={(value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, '']} 
             />
             <Legend wrapperStyle={{ color: isDarkMode ? '#f9fafb' : '#111827' }} />
             <Bar dataKey="Carburant" fill="#3B82F6" />
@@ -284,12 +284,24 @@ export default function Statistics() {
         ) : (
           <ResponsiveContainer width="100%" height={350}>
             <PieChart>
-              <Pie data={categoryData} cx="50%" cy="50%" outerRadius={120} dataKey="value" label={({ name, percent }: any) => `${name}: ${(percent * 100).toFixed(0)}%`}>
+                 <Pie 
+				  data={categoryData} 
+				  cx="50%" 
+				  cy="50%" 
+				  outerRadius={120} 
+				  dataKey="value" 
+				  label={({ name, percent }: any) => `${name}: ${(Number(percent) * 100).toFixed(0)}%`}
+			     >
+				  {categoryData.map((_: any, index: number) => (
+				    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+				   ))}
+			     </Pie>
                 {categoryData.map((entry, index) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} formatter={(value: any) => `${fmt(value)} DA`} />
+              <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} 
+			     formatter={(value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, '']} />
             </PieChart>
           </ResponsiveContainer>
         )}

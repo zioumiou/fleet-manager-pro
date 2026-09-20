@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { Vehicle, Maintenance, Fuel, Expense, KPIs, Alert, Document, Tire, Reminder, VehicleTCO } from '../types';
-
+import { NaftalCard, NaftalTransaction, Driver } from '../types';
 // Construction intelligente de l'URL de base
 const rawUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 const API_BASE = rawUrl.endsWith('/api') ? rawUrl : `${rawUrl}/api`;

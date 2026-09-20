@@ -8,7 +8,7 @@ export default function Vehicles() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [expandedVehicleId, setExpandedVehicleId] = useState<number | null>(null);
-  const [tco, setTco] = useState<VehicleTCO | null>(null);
+  #const [tco, setTco] = useState<VehicleTCO | null>(null);
   const [formData, setFormData] = useState({
     license_plate: '',
     brand: '',

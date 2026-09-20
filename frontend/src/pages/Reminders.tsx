@@ -94,7 +94,9 @@ export default function Reminders() {
   };
 
   // ✅ Correction ici : ") => {" au lieu de ") = > {"
-  const getStatusBadge = (status: string, days: number | null, km: number | null) => {
+  // ✅ Correct
+const getStatusBadge = (status: string, days: number | null | undefined, km: number | null | undefined) => {
+  
     const colors: Record<string, string> = {
       green: 'bg-green-100 text-green-800 border-green-200',
       orange: 'bg-orange-100 text-orange-800 border-orange-200',
@@ -254,7 +256,9 @@ export default function Reminders() {
                     <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs font-semibold">{r.category}</span>
                     {r.notes && <p className="text-xs text-gray-500 mt-1">{r.notes}</p>}
                   </td>
-                  <td className="px-6 py-4">{r.next_due_date ? new Date(r.next_due_date).toLocaleDateString('fr-FR') : '-'}</td>
+                  <td className="px-6 py-4">
+				    {r.next_due_date ? new Date(r.next_due_date).toLocaleDateString('fr-FR') : '-'}
+				  </td>
                   <td className="px-6 py-4">{r.next_due_mileage ? `${r.next_due_mileage.toLocaleString()} km` : '-'}</td>
                   <td className="px-6 py-4">{getStatusBadge(r.status, r.days_remaining, r.km_remaining)}</td>
                   <td className="px-6 py-4">
