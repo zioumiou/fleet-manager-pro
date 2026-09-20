@@ -2,7 +2,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .database import engine, Base
 from .routers import vehicles, maintenances, fuels, expenses, dashboard, export, documents, tires, reminders
-from .routers import documents
+from .routers import naftal
+from .routers import drivers
 
 app = FastAPI(title="FleetManager Pro API")
 
@@ -25,6 +26,8 @@ app.include_router(reminders.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")  # ✅ Cette ligne est cruciale
 app.include_router(documents.router, prefix="/api")
 app.include_router(export.router, prefix="/api")
+app.include_router(naftal.router, prefix="/api")
+app.include_router(drivers.router, prefix="/api")
 
 @app.get("/")
 def read_root():

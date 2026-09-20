@@ -1,32 +1,38 @@
-from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, Float, Date, DateTime, ForeignKey, Boolean
 from sqlalchemy.orm import relationship
 from datetime import datetime, date
 from .database import Base
 
 class Vehicle(Base):
     __tablename__ = "vehicles"
+    
     id = Column(Integer, primary_key=True, index=True)
-    license_plate = Column(String, unique=True, index=True)
-    brand = Column(String)
-    model = Column(String)
-    year = Column(Integer)
-    engine_type = Column(String)
-    transmission = Column(String)
-    initial_mileage = Column(Integer)
-    current_mileage = Column(Integer)
+    license_plate = Column(String, unique=True, index=True, nullable=False)
+    brand = Column(String, nullable=False)
+    model = Column(String, nullable=False)
+    year = Column(Integer, nullable=False)
+    fuel_type = Column(String, nullable=False, default="Essence")
+    engine_type = Column(String, nullable=True)
+    transmission = Column(String, nullable=True)
+    initial_mileage = Column(Integer, nullable=False, default=0)
+    current_mileage = Column(Integer, nullable=False, default=0)
     driver_name = Column(String, nullable=True)
     purchase_price = Column(Float, nullable=True)
     resale_price = Column(Float, nullable=True)
     purchase_date = Column(Date, nullable=True)
     resale_date = Column(Date, nullable=True)
-    reminders = relationship("Reminder", back_populates="vehicle", cascade="all, delete-orphan")
+    status = Column(String, nullable=False, default="Actif")  # ✅ AJOUTÉ
+    
+    # Relations (une seule fois chacune)
+    drivers = relationship("Driver", back_populates="vehicle")
+    naftal_cards = relationship("NaftalCard", back_populates="vehicle", cascade="all, delete-orphan")
     documents = relationship("Document", back_populates="vehicle", cascade="all, delete-orphan")
     maintenances = relationship("Maintenance", back_populates="vehicle", cascade="all, delete-orphan")
     fuels = relationship("Fuel", back_populates="vehicle", cascade="all, delete-orphan")
     expenses = relationship("Expense", back_populates="vehicle", cascade="all, delete-orphan")
-    tires = relationship("Tire", back_populates="vehicle", cascade="all, delete-orphan") # NOUVEAU
+    tires = relationship("Tire", back_populates="vehicle", cascade="all, delete-orphan")
     reminders = relationship("Reminder", back_populates="vehicle", cascade="all, delete-orphan")
-    documents = relationship("Document", back_populates="vehicle", cascade="all, delete-orphan")
+
 
 class Maintenance(Base):
     __tablename__ = "maintenances"
@@ -39,6 +45,7 @@ class Maintenance(Base):
     cost = Column(Float)
     garage = Column(String, nullable=True)
     vehicle = relationship("Vehicle", back_populates="maintenances")
+
 
 class Fuel(Base):
     __tablename__ = "fuels"
@@ -53,6 +60,7 @@ class Fuel(Base):
     full_tank = Column(Integer)
     vehicle = relationship("Vehicle", back_populates="fuels")
 
+
 class Expense(Base):
     __tablename__ = "expenses"
     id = Column(Integer, primary_key=True, index=True)
@@ -63,36 +71,34 @@ class Expense(Base):
     amount = Column(Float)
     vehicle = relationship("Vehicle", back_populates="expenses")
 
-# NOUVEAU MODÈLE : SUIVI DES PNEUS
+
 class Tire(Base):
     __tablename__ = "tires"
     id = Column(Integer, primary_key=True, index=True)
     vehicle_id = Column(Integer, ForeignKey("vehicles.id"))
     change_date = Column(Date)
     mileage = Column(Integer)
-    tire_type = Column(String)  # "Été", "Hiver", "4 Saisons"
+    tire_type = Column(String)
     brand = Column(String)
-    position = Column(String)   # "4 pneus", "Train avant", "Train arrière"
+    position = Column(String)
     cost = Column(Float)
     notes = Column(String, nullable=True)
     vehicle = relationship("Vehicle", back_populates="tires")
-    
-    # À la fin du fichier, ajoutez ce nouveau modèle :
+
+
 class Reminder(Base):
     __tablename__ = "reminders"
     id = Column(Integer, primary_key=True, index=True)
     vehicle_id = Column(Integer, ForeignKey("vehicles.id"))
-    category = Column(String)  # 'Assurance', 'Vidange', 'Révision', 'Pneus', 'Visite Technique'
+    category = Column(String)
     next_due_date = Column(Date, nullable=True)
     next_due_mileage = Column(Integer, nullable=True)
     notes = Column(String, nullable=True)
-    
     vehicle = relationship("Vehicle", back_populates="reminders")
-    
-# Ajouter cette classe dans models.py
+
+
 class Document(Base):
     __tablename__ = "documents"
-    
     id = Column(Integer, primary_key=True, index=True)
     vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=False)
     document_type = Column(String(100), nullable=False)
@@ -100,5 +106,43 @@ class Document(Base):
     file_name = Column(String(255), nullable=False)
     file_size = Column(Integer, nullable=False)
     upload_date = Column(Date, nullable=False, default=date.today)
-    
     vehicle = relationship("Vehicle", back_populates="documents")
+
+
+class Driver(Base):
+    __tablename__ = "drivers"
+    id = Column(Integer, primary_key=True, index=True)
+    first_name = Column(String(100), nullable=False)
+    last_name = Column(String(100), nullable=False)
+    license_number = Column(String(50), unique=True, nullable=False)
+    license_expiry = Column(Date, nullable=True)
+    phone = Column(String(20), nullable=True)
+    assigned_vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=True)
+    is_active = Column(Boolean, default=True)
+    vehicle = relationship("Vehicle", back_populates="drivers")
+
+
+class NaftalCard(Base):
+    __tablename__ = "naftal_cards"
+    id = Column(Integer, primary_key=True, index=True)
+    card_number = Column(String(50), unique=True, nullable=False)
+    vehicle_id = Column(Integer, ForeignKey("vehicles.id"), nullable=False)
+    monthly_limit = Column(Float, nullable=False, default=0)
+    current_balance = Column(Float, nullable=False, default=0)
+    expiration_date = Column(Date, nullable=True)
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    vehicle = relationship("Vehicle", back_populates="naftal_cards")
+    transactions = relationship("NaftalTransaction", back_populates="card", cascade="all, delete-orphan")
+
+
+class NaftalTransaction(Base):
+    __tablename__ = "naftal_transactions"
+    id = Column(Integer, primary_key=True, index=True)
+    card_id = Column(Integer, ForeignKey("naftal_cards.id"), nullable=False)
+    transaction_date = Column(DateTime, default=datetime.utcnow)
+    amount = Column(Float, nullable=False)
+    liters = Column(Float, nullable=True)
+    station = Column(String(100), nullable=True)
+    mileage = Column(Integer, nullable=True)
+    card = relationship("NaftalCard", back_populates="transactions")

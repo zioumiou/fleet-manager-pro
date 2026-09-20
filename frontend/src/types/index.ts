@@ -124,3 +124,35 @@ export interface VehicleTCO {
   total_tire_cost: number;
   depreciation: number;
 }
+
+export interface NaftalCard {
+  id: number;
+  card_number: string;
+  vehicle_id: number;
+  monthly_limit: number;
+  current_balance: number;
+  expiration_date?: string;
+  is_active: boolean;
+  created_at: string;
+}
+
+export interface NaftalTransaction {
+  id: number;
+  card_id: number;
+  transaction_date: string;
+  amount: number;
+  liters?: number;
+  station?: string;
+  mileage?: number;
+}
+
+export interface Driver {
+  id: number;
+  first_name: string;
+  last_name: string;
+  license_number: string;
+  license_expiry?: string;
+  phone?: string;
+  assigned_vehicle_id?: number;
+  is_active: boolean;
+}

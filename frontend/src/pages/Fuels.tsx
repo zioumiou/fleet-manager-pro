@@ -75,10 +75,7 @@ export default function Fuels() {
       });
       loadData();
     } catch (error: any) {
-      const errorMsg = typeof error.response?.data?.detail === 'object'
-        ? JSON.stringify(error.response?.data?.detail)
-        : error.response?.data?.detail;
-      alert(errorMsg || "Erreur lors de l'enregistrement");
+      alert(error.response?.data?.detail || "Erreur lors de l'enregistrement");
     }
   };
 
@@ -92,7 +89,7 @@ export default function Fuels() {
       price_per_liter: fuel.price_per_liter,
       total_cost: fuel.total_cost,
       station: fuel.station || '',
-      full_tank: (Number(fuel.full_tank) === 1 || fuel.full_tank === true) ? 'Oui' : 'Non'
+      full_tank: (fuel.full_tank === 1 || fuel.full_tank === true) ? 'Oui' : 'Non'
     });
     setShowForm(true);
   };

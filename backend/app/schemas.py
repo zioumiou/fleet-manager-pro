@@ -13,26 +13,19 @@ class Document(DocumentBase):
     upload_date: datetime
     class Config: from_attributes = True
 
+
 class VehicleBase(BaseModel):
     license_plate: str
     brand: str
     model: str
     year: int
-    engine_type: str
-    transmission: str
-    initial_mileage: int
+    fuel_type: str
     current_mileage: int
-    driver_name: Optional[str] = None
-    purchase_price: Optional[float] = None
-    resale_price: Optional[float] = None
-    purchase_date: Optional[date] = None
-    resale_date: Optional[date] = None
-
-    @field_validator('purchase_date', 'resale_date', mode='before')
-    @classmethod
-    def empty_str_to_none(cls, v):
-        return None if v == "" else v
-
+    initial_mileage: int = 0
+    purchase_date: Optional[date] = None       # ✅ Accepte null si vide
+    purchase_price: float = 0.0
+    resale_price: Optional[float] = None       # ✅ Accepte null si vide
+    status: str = "Actif"
 class VehicleCreate(VehicleBase): pass
 
 class VehicleUpdate(BaseModel):
@@ -180,17 +173,47 @@ class AlertResponse(BaseModel):
     days_remaining: Optional[int] = None
     km_remaining: Optional[int] = None
     severity: str
-    
-class DocumentBase(BaseModel):
-    document_type: str
-    file_name: str
-    file_size: int
 
-class Document(DocumentBase):
-    id: int
+class NaftalCardBase(BaseModel):
+    card_number: str
     vehicle_id: int
-    file_path: str
-    upload_date: date
+    monthly_limit: float = 0
+    current_balance: float = 0
+    expiration_date: Optional[date] = None
+    is_active: bool = True
+
+class NaftalCard(NaftalCardBase):
+    id: int
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class NaftalTransactionBase(BaseModel):
+    card_id: int
+    amount: float
+    liters: Optional[float] = None
+    station: Optional[str] = None
+    mileage: Optional[int] = None
+
+class NaftalTransaction(NaftalTransactionBase):
+    id: int
+    transaction_date: datetime
+    
+    class Config:
+        from_attributes = True
+
+class DriverBase(BaseModel):
+    first_name: str
+    last_name: str
+    license_number: str
+    license_expiry: Optional[date] = None
+    phone: Optional[str] = None
+    assigned_vehicle_id: Optional[int] = None
+    is_active: bool = True
+
+class Driver(DriverBase):
+    id: int
     
     class Config:
         from_attributes = True

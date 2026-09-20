@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react';
 import { getVehicles, createVehicle, updateVehicle, deleteVehicle, getVehicleTCO, exportVehiclesCSV, exportVehiclesExcel, downloadFile } from '../services/api';
-import { Vehicle } from '../types';
+import { Vehicle, VehicleTCO } from '../types';
 import { Plus, Trash2, Edit, Download, FileUp } from 'lucide-react';
-import DocumentManager from '../components/DocumentManager';
 
 export default function Vehicles() {
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [expandedVehicleId, setExpandedVehicleId] = useState<number | null>(null);
-  //const [tco, setTco] = useState<VehicleTCO | null>(null);
+  const [tco, setTco] = useState<VehicleTCO | null>(null);
   const [formData, setFormData] = useState({
     license_plate: '',
     brand: '',
@@ -37,70 +36,102 @@ export default function Vehicles() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      const payload = {
-        ...formData,
-        year: parseInt(String(formData.year)),
-        current_mileage: parseInt(String(formData.current_mileage)),
-        initial_mileage: parseInt(String(formData.initial_mileage)),
-        purchase_price: parseFloat(String(formData.purchase_price)),
-        resale_price: parseFloat(String(formData.resale_price))
-      };
-      if (editingId) {
-        await updateVehicle(editingId, payload);
-      } else {
-        await createVehicle(payload);
-      }
-      setShowForm(false);
-      setEditingId(null);
-      setFormData({
-        license_plate: '',
-        brand: '',
-        model: '',
-        year: new Date().getFullYear(),
-        fuel_type: 'Essence',
-        current_mileage: 0,
-        initial_mileage: 0,
-        purchase_date: new Date().toISOString().split('T')[0],
-        purchase_price: 0,
-        resale_price: 0,
-        status: 'Actif'
-      });
-      loadData();
-    } catch (error: any) {
-      alert(error.response?.data?.detail || "Erreur lors de l'enregistrement");
+  // ✅ Fonction utilitaire pour extraire un message d'erreur lisible
+  const extractErrorMessage = (error: any): string => {
+    if (!error.response?.data?.detail) return "Erreur lors de l'enregistrement";
+    
+    const detail = error.response.data.detail;
+    
+    // Si c'est un tableau (validation Pydantic)
+    if (Array.isArray(detail)) {
+      return detail
+        .map((d: any) => {
+          if (d.msg) return d.msg;
+          if (typeof d === 'string') return d;
+          return JSON.stringify(d);
+        })
+        .join('\n');
     }
+    
+    // Si c'est une chaîne
+    if (typeof detail === 'string') return detail;
+    
+    // Si c'est un objet
+    return JSON.stringify(detail);
   };
 
-  const handleEdit = (vehicle: Vehicle) => {
-	  setEditingId(vehicle.id);
-	  setFormData({
-		license_plate: vehicle.license_plate || '',
-		brand: vehicle.brand || '',
-		model: vehicle.model || '',
-		year: vehicle.year || new Date().getFullYear(),
-		fuel_type: vehicle.fuel_type || 'Essence',       // ✅ Sécurisé
-		current_mileage: vehicle.current_mileage || 0,   // ✅ Sécurisé
-		initial_mileage: vehicle.initial_mileage || 0,
-		purchase_date: vehicle.purchase_date || new Date().toISOString().split('T')[0],
-		purchase_price: vehicle.purchase_price || 0,
-		resale_price: vehicle.resale_price || 0,
-		status: vehicle.status || 'Actif'                // ✅ Sécurisé
-	  });
-	  setShowForm(true);
-	};
-
-  const handleTCO = async (id: number) => {
+	const handleSubmit = async (e: React.FormEvent) => {
+	  e.preventDefault();
 	  try {
-		const res = await getVehicleTCO(id);
-		// ✅ Utilisez total_tco au lieu de total_cost
-		alert(`Coût Total de Possession: ${res.data.total_tco.toFixed(2)} DA`);
-	  } catch (error) {
-		alert("Erreur lors du calcul du TCO");
+		// ✅ Validation et nettoyage de la date
+		let purchaseDate = formData.purchase_date;
+		if (purchaseDate && purchaseDate.length > 10) {
+		  // Si la date est trop longue (ex: "20266-04-09"), on la tronque
+		  purchaseDate = purchaseDate.substring(0, 10);
+		}
+		
+		const payload = {
+		  license_plate: String(formData.license_plate).trim(),
+		  brand: String(formData.brand).trim(),
+		  model: String(formData.model).trim(),
+		  year: parseInt(String(formData.year)) || new Date().getFullYear(),
+		  fuel_type: String(formData.fuel_type) || 'Essence',
+		  current_mileage: parseInt(String(formData.current_mileage)) || 0,
+		  initial_mileage: parseInt(String(formData.initial_mileage)) || 0,
+		  purchase_date: purchaseDate || null,  // ✅ Envoie null si vide
+		  purchase_price: parseFloat(String(formData.purchase_price)) || 0.0,
+		  resale_price: formData.resale_price ? parseFloat(String(formData.resale_price)) : null,
+		  status: String(formData.status) || 'Actif'
+		};
+
+		console.log("📤 Payload envoyé au backend:", payload);
+
+		if (editingId) {
+		  await updateVehicle(editingId, payload);
+		} else {
+		  await createVehicle(payload);
+		}
+		
+		setShowForm(false);
+		setEditingId(null);
+		setFormData({
+		  license_plate: '', brand: '', model: '', year: new Date().getFullYear(),
+		  fuel_type: 'Essence', current_mileage: 0, initial_mileage: 0,
+		  purchase_date: new Date().toISOString().split('T')[0],
+		  purchase_price: 0, resale_price: 0, status: 'Actif'
+		});
+		loadData();
+	  } catch (error: any) {
+		console.error("🚨 DÉTAIL DE L'ERREUR BACKEND (422) :", error.response?.data);
+		alert(extractErrorMessage(error));
 	  }
 	};
+  const handleEdit = (vehicle: Vehicle) => {
+    setEditingId(vehicle.id);
+    setFormData({
+      license_plate: vehicle.license_plate || '',
+      brand: vehicle.brand || '',
+      model: vehicle.model || '',
+      year: vehicle.year || new Date().getFullYear(),
+      fuel_type: vehicle.fuel_type || 'Essence',
+      current_mileage: vehicle.current_mileage || 0,
+      initial_mileage: vehicle.initial_mileage || 0,
+      purchase_date: vehicle.purchase_date || new Date().toISOString().split('T')[0],
+      purchase_price: vehicle.purchase_price || 0,
+      resale_price: vehicle.resale_price || 0,
+      status: vehicle.status || 'Actif'
+    });
+    setShowForm(true);
+  };
+
+  const handleTCO = async (id: number) => {
+    try {
+      const res = await getVehicleTCO(id);
+      alert(`Coût Total de Possession: ${res.data.total_tco.toFixed(2)} DA`);
+    } catch (error) {
+      alert("Erreur lors du calcul du TCO");
+    }
+  };
 
   const handleExportCSV = async () => {
     try {
@@ -262,14 +293,6 @@ export default function Vehicles() {
           </tbody>
         </table>
       </div>
-
-      {/* Section Documents pour le véhicule sélectionné */}
-      {expandedVehicleId && (
-        <DocumentManager 
-          vehicleId={expandedVehicleId}
-          vehiclePlate={vehicles.find(v => v.id === expandedVehicleId)?.license_plate || ''}
-        />
-      )}
     </div>
   );
 }
