@@ -86,7 +86,6 @@ export default function Statistics() {
   const COLORS = ['#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
   const fmt = (n: number) => n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  // ✅ EXPORT XLSX COMPLET
   const exportReportXLSX = (type: 'global' | 'individual') => {
     const filteredFuels = filterByVehicle(filterByYear(fuels));
     const filteredMaint = filterByVehicle(filterByYear(maintenances));
@@ -99,7 +98,6 @@ export default function Statistics() {
 
     const wb = XLSX.utils.book_new();
 
-    // Feuille 1 : Résumé
     const summaryData = [
       [`RAPPORT ${type === 'global' ? 'GLOBAL' : 'INDIVIDUEL'} - FLEET MANAGER`],
       [`Année: ${selectedYear}`],
@@ -125,59 +123,27 @@ export default function Statistics() {
     const wsSummary = XLSX.utils.aoa_to_sheet(summaryData);
     XLSX.utils.book_append_sheet(wb, wsSummary, 'Résumé');
 
-    // Feuille 2 : Carburant
-    const fuelData = [
-      ['Date', 'Véhicule', 'Litres', 'Prix/Litre', 'Total', 'Station']
-    ];
+    const fuelData = [['Date', 'Véhicule', 'Litres', 'Prix/Litre', 'Total', 'Station']];
     filteredFuels.forEach(f => {
       const vehicle = vehicles.find(v => v.id === f.vehicle_id);
-      fuelData.push([
-        new Date(f.fuel_date).toLocaleDateString('fr-FR'),
-        vehicle?.license_plate || 'N/A',
-        f.liters,
-        f.price_per_liter,
-        f.total_cost,
-        f.station || ''
-      ]);
+      fuelData.push([new Date(f.fuel_date).toLocaleDateString('fr-FR'), vehicle?.license_plate || 'N/A', f.liters, f.price_per_liter, f.total_cost, f.station || '']);
     });
-    const wsFuel = XLSX.utils.aoa_to_sheet(fuelData);
-    XLSX.utils.book_append_sheet(wb, wsFuel, 'Carburant');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(fuelData), 'Carburant');
 
-    // Feuille 3 : Entretiens
-    const maintData = [
-      ['Date', 'Véhicule', 'Type', 'Description', 'Coût', 'Garage']
-    ];
+    const maintData = [['Date', 'Véhicule', 'Type', 'Description', 'Coût', 'Garage']];
     filteredMaint.forEach(m => {
       const vehicle = vehicles.find(v => v.id === m.vehicle_id);
-      maintData.push([
-        new Date(m.maintenance_date).toLocaleDateString('fr-FR'),
-        vehicle?.license_plate || 'N/A',
-        m.maintenance_type,
-        m.description || '',
-        m.cost,
-        m.garage || ''
-      ]);
+      maintData.push([new Date(m.maintenance_date).toLocaleDateString('fr-FR'), vehicle?.license_plate || 'N/A', m.maintenance_type, m.description || '', m.cost, m.garage || '']);
     });
-    const wsMaint = XLSX.utils.aoa_to_sheet(maintData);
-    XLSX.utils.book_append_sheet(wb, wsMaint, 'Entretiens');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(maintData), 'Entretiens');
 
-    // Feuille 4 : Dépenses
-    const expData = [
-      ['Date', 'Véhicule', 'Description', 'Montant']
-    ];
+    const expData = [['Date', 'Véhicule', 'Description', 'Montant']];
     filteredExpenses.forEach(e => {
       const vehicle = vehicles.find(v => v.id === e.vehicle_id);
-      expData.push([
-        new Date(e.expense_date).toLocaleDateString('fr-FR'),
-        vehicle?.license_plate || 'N/A',
-        e.description,
-        e.amount
-      ]);
+      expData.push([new Date(e.expense_date).toLocaleDateString('fr-FR'), vehicle?.license_plate || 'N/A', e.description, e.amount]);
     });
-    const wsExp = XLSX.utils.aoa_to_sheet(expData);
-    XLSX.utils.book_append_sheet(wb, wsExp, 'Dépenses');
+    XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(expData), 'Dépenses');
 
-    // Télécharger le fichier
     const fileName = `Rapport_${type}_${selectedYear}_${new Date().toISOString().split('T')[0]}.xlsx`;
     XLSX.writeFile(wb, fileName);
   };
@@ -185,53 +151,34 @@ export default function Statistics() {
   return (
     <div className={`p-2 ${isDarkMode ? 'bg-gray-900 min-h-screen' : 'bg-gray-50 min-h-screen'}`}>
       <div className="flex justify-between items-center mb-6">
-        <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
-           Statistiques & Rapports
-        </h1>
+        <h1 className={`text-3xl font-bold ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>📊 Statistiques & Rapports</h1>
         <div className="flex gap-2">
-          <button
-            onClick={() => exportReportXLSX('global')}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700"
-          >
+          <button onClick={() => exportReportXLSX('global')} className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700">
             <FileSpreadsheet size={18} /> Rapport Global XLSX
           </button>
-          <button
-            onClick={() => exportReportXLSX('individual')}
-            disabled={!selectedVehicle}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-          >
+          <button onClick={() => exportReportXLSX('individual')} disabled={!selectedVehicle} className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed">
             <FileSpreadsheet size={18} /> Rapport Individuel XLSX
           </button>
         </div>
       </div>
 
-      {/* Filtres */}
       <div className={`flex gap-4 mb-6 p-4 rounded-lg shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <div className="flex items-center gap-2">
           <Filter size={18} className={isDarkMode ? 'text-gray-400' : 'text-gray-500'} />
           <label className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Année :</label>
-          <select 
-            value={selectedYear} 
-            onChange={(e) => setSelectedYear(parseInt(e.target.value))} 
-            className={`border rounded px-3 py-1 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-          >
+          <select value={selectedYear} onChange={(e) => setSelectedYear(parseInt(e.target.value))} className={`border rounded px-3 py-1 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
             {[2023, 2024, 2025, 2026].map(y => <option key={y} value={y}>{y}</option>)}
           </select>
         </div>
         <div className="flex items-center gap-2">
           <label className={`text-sm font-medium ${isDarkMode ? 'text-gray-200' : 'text-gray-700'}`}>Véhicule :</label>
-          <select 
-            value={selectedVehicle || ''} 
-            onChange={(e) => setSelectedVehicle(e.target.value ? parseInt(e.target.value) : null)} 
-            className={`border rounded px-3 py-1 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}
-          >
+          <select value={selectedVehicle || ''} onChange={(e) => setSelectedVehicle(e.target.value ? parseInt(e.target.value) : null)} className={`border rounded px-3 py-1 ${isDarkMode ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'}`}>
             <option value="">Tous les véhicules</option>
             {vehicles.map(v => <option key={v.id} value={v.id}>{v.license_plate}</option>)}
           </select>
         </div>
       </div>
 
-      {/* Graphique 1 : Dépenses mensuelles */}
       <div className={`p-6 rounded-lg shadow-sm mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           <DollarSign className="text-blue-500" /> Dépenses Mensuelles ({selectedYear})
@@ -241,10 +188,7 @@ export default function Statistics() {
             <CartesianGrid strokeDasharray="3 3" stroke={isDarkMode ? '#4b5563' : '#e5e7eb'} />
             <XAxis dataKey="month" stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
             <YAxis stroke={isDarkMode ? '#9ca3af' : '#6b7280'} />
-            <Tooltip 
-              contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }}
-                 formatter={(value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, '']} 
-            />
+            <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} formatter={(value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, '']} />
             <Legend wrapperStyle={{ color: isDarkMode ? '#f9fafb' : '#111827' }} />
             <Bar dataKey="Carburant" fill="#3B82F6" />
             <Bar dataKey="Entretien" fill="#10B981" />
@@ -253,7 +197,6 @@ export default function Statistics() {
         </ResponsiveContainer>
       </div>
 
-      {/* Graphique 2 : Évolution du kilométrage */}
       <div className={`p-6 rounded-lg shadow-sm mb-6 ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           <TrendingUp className="text-green-500" /> Évolution du Kilométrage ({selectedYear})
@@ -274,7 +217,6 @@ export default function Statistics() {
         )}
       </div>
 
-      {/* Graphique 3 : Répartition par catégorie */}
       <div className={`p-6 rounded-lg shadow-sm ${isDarkMode ? 'bg-gray-800' : 'bg-white'}`}>
         <h2 className={`text-xl font-semibold mb-4 flex items-center gap-2 ${isDarkMode ? 'text-white' : 'text-gray-900'}`}>
           <PieChartIcon className="text-purple-500" /> Répartition des Dépenses par Catégorie
@@ -284,24 +226,22 @@ export default function Statistics() {
         ) : (
           <ResponsiveContainer width="100%" height={350}>
             <PieChart>
-                 <Pie 
-				  data={categoryData} 
-				  cx="50%" 
-				  cy="50%" 
-				  outerRadius={120} 
-				  dataKey="value" 
-				  label={({ name, percent }: any) => `${name}: ${(Number(percent) * 100).toFixed(0)}%`}
-			     >
-				  {categoryData.map((_: any, index: number) => (
-				    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-				   ))}
-			     </Pie>
-                {categoryData.map((entry, index) => (
+              <Pie 
+                data={categoryData} 
+                cx="50%" 
+                cy="50%" 
+                outerRadius={120} 
+                dataKey="value" 
+                label={({ name, percent }: any) => `${name}: ${(Number(percent) * 100).toFixed(0)}%`}
+              >
+                {categoryData.map((_: any, index: number) => (
                   <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                 ))}
               </Pie>
-              <Tooltip contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} 
-			     formatter={(value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, '']} />
+              <Tooltip 
+                contentStyle={{ backgroundColor: isDarkMode ? '#1f2937' : '#ffffff', border: `1px solid ${isDarkMode ? '#4b5563' : '#e5e7eb'}`, color: isDarkMode ? '#f9fafb' : '#111827' }} 
+                formatter={(value: any) => [`${Number(value).toLocaleString('fr-FR', { minimumFractionDigits: 2 })} DA`, '']} 
+              />
             </PieChart>
           </ResponsiveContainer>
         )}
